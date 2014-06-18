@@ -1,0 +1,15 @@
+{
+  "name": "markov-model",
+  "version": "0.1.0",
+  "description": "Markov chain model class",
+  "main": "markov-model.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "markov",
+    "markov-model"
+  ],
+  "author": "Friedemann Altrock",
+  "license": "ISC"
+}
