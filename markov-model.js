@@ -10,23 +10,9 @@
     context.Markov = factory();
   }
 }(this, [], function () {
-  // o(g).o(f) == g `after` f == g(f(x))
-  function o(f) {
-    var previous = null;
-    if ("call" in this) {
-      previous = this;
-    }
-    function of(x) {
-      if (previous) {
-        return previous.call(this, f.call(this, x));
-      }
-      return f.call(this, x);
-    }
-    of.o = o;
-    return of;
-  }
+  // some functional stuff ------------------------------------------
 
-  // then(f).then(g) == o(g).o(f) == g(f(x))
+  // then(f).then(g) == g(f(x))
   function then(f) {
     var previous = null;
     if ("call" in this) {
@@ -39,9 +25,10 @@
       return f.call(this, x);
     }
     tf.then = then;
-    return then;
+    return tf;
   }
 
+  // curried map that only passes 1 parameter to f
   function map(f) {
     return function (xs) {
       var rs = [];
@@ -51,31 +38,7 @@
     }
   }
 
-  function foldl(f) {
-    return function (x) {
-      return function (xs) {
-        var i = 0, l = xs.length;
-        while (i < l) x = f.call(this, x, xs[i++]);
-        return x;
-      }
-    }
-  }
-
-  // ----------------------------------------------------------------
-
-  //
-  function Markov(depth) {
-    depth = depth || 1;
-    this.sep = ",";
-    this.depth = depth;
-    this.symbols = [""];
-    this.symbolMap = {"":0};
-    this.prePadding = Array(depth).join(this.sep).split(this.sep);
-    this.postPadding = [""];
-    // :: Map T (Map Index Count)
-    this.chains = {};
-    this.probabilities = null;
-  }
+  // the actual model functionalities -------------------------------
 
   // pad input with empty strings for start and end probabilities
   function padInput(xs) {
@@ -122,6 +85,7 @@
         f.call(this, [pref.call(this, i), xs[i + this.depth]]);
         i++;
       }
+      return xs;
     }
   }
 
@@ -140,12 +104,8 @@
     return this;
   }
 
-  // train the model with a sequence of symbols
-  var makeChains = o(forEachPrefixPair(addChain)).o(map(symbolToIndex)).o(map(addSymbol)).o(padInput);
-
-  // train the model
-  function train(symbols) {
-    makeChains.call(this, symbols);
+  // reset probabilities
+  function resetProbabilities() {
     this.probabilities = null;
     return this;
   }
@@ -160,7 +120,7 @@
     return this.probabilities[pfx][i][1];
   }
 
-  // generate a random string with the model's probabilities
+  // generate a random string of symbols with the model's probabilities
   function generate(minLength, maxLength) {
     if (this.probabilities == null) {
       updateProbabilities.call(this);
@@ -188,40 +148,58 @@
     return string;
   }
 
-  function toJSON() {
-    return JSON.stringify(this);
-  }
+  // preparation for input to score and train
+  var padToIndexes = then(padInput).then(map(symbolToIndex));
 
-  function fromJSON(str) {
-    var M = new Markov();
-    var obj = JSON.parse(str);
-    for (var p in M) {
-      if (obj[p]) {
-        M[p] = obj[p];
-      }
-    }
-    return M;
-  }
-
+  // score in [0, 1] how well the input symbol list fits the model
   function score(symbols) {
     var len = symbols.length;
     var score = 0;
-    var sumScores = forEachPrefixPair(function (pair) {
+    var scoreAndSum = forEachPrefixPair(function (pair) {
       var pfx = pair[0], sfx = pair[1];
       if (this.chains[pfx] && this.chains[pfx][sfx]) {
         score += this.chains[pfx][sfx] / this.chains[pfx]._sum;
       }
     });
-    o(sumScores).o(map(symbolToIndex)).o(padInput).call(this, symbols);
+    padToIndexes.then(scoreAndSum).call(this, symbols);
     return score / len;
   }
 
-  Markov.prototype.train = train;
+  // Construct an instance for prefix length <depth>.
+  // Optionally give a separator for the prefixes in chains.
+  function Markov(depth) {
+    depth = depth || 1;
+    this.sep = ",";
+    this.depth = depth;
+    this.symbols = [""];
+    this.symbolMap = {"":0};
+    this.prePadding = Array(depth).join(this.sep).split(this.sep);
+    this.postPadding = [""];
+    this.chains = {};
+    this.probabilities = null;
+  }
+
+  // train the model with a sequence of symbols
+  Markov.prototype.train = then(map(addSymbol))
+    .then(padToIndexes)
+    .then(forEachPrefixPair(addChain))
+    .then(resetProbabilities);
   Markov.prototype.generate = generate;
   Markov.prototype.score = score;
-
-  Markov.fromJSON = fromJSON;
-  Markov.prototype.toJSON = toJSON;
+  Markov.prototype.toJSON = function toJSON() {
+    return {
+      depth: this.depth,
+      symbols: this.symbols,
+      chains: this.chains
+    };
+  };
+  Markov.fromJSON = function fromJSON(str) {
+    var obj = JSON.parse(str);
+    var M = new Markov(obj.depth);
+    M.symbols = obj.symbols;
+    M.chains = obj.chains;
+    return M;
+  };
 
   return Markov;
 }))
