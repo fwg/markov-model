@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>markov-model.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>markov-model.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(context, deps, factory)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>You can use it with AMD/RequireJS.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> define === <span class="hljs-string">'function'</span> &amp;&amp; define.amd) {
+    <span class="hljs-keyword">return</span> define(deps, factory);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>You can use it in a CommonJS environment like node.js.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> module !== <span class="hljs-string">"undefined"</span> &amp;&amp; module.exports) {
+    <span class="hljs-keyword">return</span> module.exports = factory.apply(context, deps.map(<span class="hljs-built_in">require</span>));
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>You can also just include it in your page with a <code>&lt;script&gt;</code> tag.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  context.Markov = factory();
+}(<span class="hljs-keyword">this</span>, [], <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <h2 id="markov-model-class">Markov model class</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>This class provides a way to create a model of the probabilistic
+properties of a sequence of symbols and generate a new sequence from
+this model with the recorded probabilities. It has one parameter:
+depth.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Markov</span><span class="hljs-params">(depth)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>It works by taking depth-sized subsequences of the input as a prefix
+and counting how often which symbol follows such a prefix.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    depth = depth || <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">this</span>.depth = depth;
+    <span class="hljs-keyword">this</span>.counts = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>It is agnostic to the type of the symbols, as it converts the input
+sequence to indexes in a set of known symbols. You can replace any
+symbol (except the <code>0</code> symbol) without breaking the model.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">this</span>.symbols = [<span class="hljs-string">""</span>];
+    <span class="hljs-keyword">this</span>.separator = <span class="hljs-string">","</span>;
+    <span class="hljs-keyword">this</span>.symbolMap = {<span class="hljs-string">""</span>:<span class="hljs-number">0</span>};
+    <span class="hljs-keyword">this</span>.prePadding = <span class="hljs-built_in">Array</span>(depth).join(<span class="hljs-string">","</span>).split(<span class="hljs-string">","</span>);
+    <span class="hljs-keyword">this</span>.postPadding = [<span class="hljs-string">""</span>];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>It can generate a random sequence by converting the counts to
+probabilities and taking each subsequence as a state in the generation
+process, thereby producing a Markov chain.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">this</span>.probabilities = <span class="hljs-literal">null</span>;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <h3 id="training-the-model">Training the model</h3>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>Train the model with a sequence of symbols by
+adding all the symbols to the set of known symbols,
+padding the input with empty strings as starting symbols,
+converting the symbols to indexes, and
+counting all prefix-symbol pairs.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Markov.prototype.train = compose([
+    curry(map, addSymbol),
+    padInput,
+    curry(map, symbolToIndex),
+    curry(forEachPrefixPair, countPair),
+    resetProbabilities
+  ]);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <h3 id="generating-a-sequence">Generating a sequence</h3>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>Generate a random sequence of symbols with the model’s probabilities.
+Will try to honour the <code>minLength</code> but cannot escape absorbing states
+that only have the sequence end as their following state. It may produce
+a sequence shorter than <code>minLength</code> but never a sequence longer than
+<code>maxLength</code>.</p>
+<p>Works by using a <code>depth</code>-sized list of symbols that represents the current
+state and shifting the randomly chosen symbol to the end of it until
+either <code>maxLength</code> symbols were generated or the end state (symbol <code>0</code>)
+was generated 15 times.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Markov.prototype.generate = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">generate</span><span class="hljs-params">(minLength, maxLength)</span> {</span>
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.probabilities == <span class="hljs-literal">null</span>) {
+      updateProbabilities.call(<span class="hljs-keyword">this</span>);
+    }
+    maxLength = maxLength || minLength;
+    <span class="hljs-keyword">var</span> string = [];
+    <span class="hljs-keyword">var</span> pfx = map.call(<span class="hljs-keyword">this</span>, symbolToIndex, <span class="hljs-keyword">this</span>.prePadding);
+    <span class="hljs-keyword">var</span> sfx = genSuffix.call(<span class="hljs-keyword">this</span>, pfx.join(<span class="hljs-keyword">this</span>.separator));
+    <span class="hljs-keyword">var</span> zCount = <span class="hljs-number">0</span>;
+    <span class="hljs-keyword">while</span> (string.length &lt; maxLength &amp;&amp; sfx != <span class="hljs-number">0</span> ||
+           string.length &lt; minLength) {
+      <span class="hljs-keyword">if</span> (sfx != <span class="hljs-number">0</span>) {
+        string.push(<span class="hljs-keyword">this</span>.symbols[sfx]);
+        pfx.push(sfx);
+        pfx.shift();
+      } <span class="hljs-keyword">else</span> {
+        zCount += <span class="hljs-number">1</span>;
+        <span class="hljs-keyword">if</span> (zCount &gt; <span class="hljs-number">15</span>) {
+          <span class="hljs-keyword">break</span>;
+        }
+      }
+      sfx = genSuffix.call(<span class="hljs-keyword">this</span>, pfx.join(<span class="hljs-keyword">this</span>.separator));
+    }
+    <span class="hljs-keyword">return</span> string;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <h3 id="scoring-a-sequence">Scoring a sequence</h3>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Score a sequence on how well it matches the model’s probabilities.
+Produces a value between <code>0</code> and <code>1</code>.</p>
+<p>Works by mapping the sequence to indexes and summing the recorded counts
+of the prefix-symbol occurrences scaled by their relative frequency.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Markov.prototype.score = compose([
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(symbols)</span> {</span>
+      <span class="hljs-keyword">this</span>._score = <span class="hljs-number">0</span>;
+      <span class="hljs-keyword">this</span>._scoreFactor = symbols.length;
+      <span class="hljs-keyword">return</span> symbols;
+    },
+    padInput,
+    curry(map, symbolToIndex),
+    curry(forEachPrefixPair, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(pair)</span> {</span>
+      <span class="hljs-keyword">var</span> pfx = pair[<span class="hljs-number">0</span>], sfx = pair[<span class="hljs-number">1</span>];
+      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.counts[pfx] &amp;&amp; <span class="hljs-keyword">this</span>.counts[pfx][sfx]) {
+        <span class="hljs-keyword">this</span>._score += <span class="hljs-keyword">this</span>.counts[pfx][sfx] / <span class="hljs-keyword">this</span>.counts[pfx]._sum;
+      }
+    }),
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>._score / <span class="hljs-keyword">this</span>._scoreFactor;
+    }
+  ]);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <h3 id="transforming-to-and-from-json">Transforming to and from JSON</h3>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>You can just use <code>JSON.stringify</code> on a model. This object contains all
+relevant information for the model to be reconstructed.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Markov.prototype.toJSON = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">toJSON</span><span class="hljs-params">()</span> {</span>
+    <span class="hljs-keyword">return</span> {
+      depth: <span class="hljs-keyword">this</span>.depth,
+      symbols: <span class="hljs-keyword">this</span>.symbols,
+      counts: <span class="hljs-keyword">this</span>.counts
+    };
+  };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>Restores a model from a JSON string! If you used non-primitive symbols
+that need special initialisation, you can just iterate over <code>.symbols</code> and
+replace them.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Markov.fromJSON = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">fromJSON</span><span class="hljs-params">(str)</span> {</span>
+    <span class="hljs-keyword">var</span> obj = <span class="hljs-built_in">JSON</span>.parse(str);
+    <span class="hljs-keyword">var</span> M = <span class="hljs-keyword">new</span> Markov(obj.depth);
+    map.call(M, addSymbol, obj.symbols);
+    M.counts = obj.counts;
+    <span class="hljs-keyword">return</span> M;
+  };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <hr>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>Pad input with empty strings for start and end probabilities.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">padInput</span><span class="hljs-params">(xs)</span> {</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.prePadding.concat(xs).concat(<span class="hljs-keyword">this</span>.postPadding);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>Map symbols to internal indexes.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">symbolToIndex</span><span class="hljs-params">(x)</span> {</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.symbolMap[x];
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>Add symbol and map to internal index.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">addSymbol</span><span class="hljs-params">(x)</span> {</span>
+    <span class="hljs-keyword">if</span> (<span class="hljs-literal">null</span> == <span class="hljs-keyword">this</span>.symbolMap[x]) {
+      <span class="hljs-keyword">this</span>.symbolMap[x] = <span class="hljs-keyword">this</span>.symbols.push(x) - <span class="hljs-number">1</span>;
+    }
+    <span class="hljs-keyword">return</span> x;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>Add one count of <code>symbol follows prefix</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">countPair</span><span class="hljs-params">(pair)</span> {</span>
+    <span class="hljs-keyword">var</span> prefix = pair[<span class="hljs-number">0</span>];
+    <span class="hljs-keyword">var</span> symbol = pair[<span class="hljs-number">1</span>];
+    <span class="hljs-keyword">this</span>.counts[prefix] = <span class="hljs-keyword">this</span>.counts[prefix] || {_sum: <span class="hljs-number">0</span>};
+    <span class="hljs-keyword">this</span>.counts[prefix][symbol] = (<span class="hljs-keyword">this</span>.counts[prefix][symbol] || <span class="hljs-number">0</span>) + <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">this</span>.counts[prefix]._sum += <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">return</span> pair;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Get <code>i</code>-th <code>depth</code>-sized slice/prefix of a list <code>xs</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">prefix</span><span class="hljs-params">(xs, i)</span> {</span>
+    <span class="hljs-keyword">return</span> xs.slice(i, i + <span class="hljs-keyword">this</span>.depth).join(<span class="hljs-keyword">this</span>.separator);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>Do <code>f</code> on all <code>depth</code>-sized prefixes and their following symbols.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">forEachPrefixPair</span><span class="hljs-params">(f, xs)</span> {</span>
+    <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>;
+    <span class="hljs-keyword">var</span> l = xs.length - <span class="hljs-keyword">this</span>.depth;
+    <span class="hljs-keyword">var</span> pref = curry(prefix, xs);
+    <span class="hljs-keyword">while</span> (i &lt; l) {
+      f.call(<span class="hljs-keyword">this</span>, [pref.call(<span class="hljs-keyword">this</span>, i), xs[i + <span class="hljs-keyword">this</span>.depth]]);
+      i++;
+    }
+    <span class="hljs-keyword">return</span> xs;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>Training resets probabilities because they are only needed for generation.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">resetProbabilities</span><span class="hljs-params">()</span> {</span>
+    <span class="hljs-keyword">this</span>.probabilities = <span class="hljs-literal">null</span>;
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>Recalculate the <code>random()</code> limits for generation. This produces a map of
+prefixes to a list of probabilities each paired with a symbol.</p>
+<p>Each probability is the sum of the previous probabilities and the
+probability of the current symbol so that the values in the list only
+increase.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">updateProbabilities</span><span class="hljs-params">()</span> {</span>
+    <span class="hljs-keyword">this</span>.probabilities = {};
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> pfx <span class="hljs-keyword">in</span> <span class="hljs-keyword">this</span>.counts) {
+      <span class="hljs-keyword">var</span> upper = <span class="hljs-number">0</span>;
+      <span class="hljs-keyword">var</span> probs = [];
+      <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> sfx <span class="hljs-keyword">in</span> <span class="hljs-keyword">this</span>.counts[pfx]) {
+        upper = upper + (<span class="hljs-keyword">this</span>.counts[pfx][sfx] / <span class="hljs-keyword">this</span>.counts[pfx]._sum);
+        probs.push([upper, sfx]);
+      }
+      <span class="hljs-keyword">this</span>.probabilities[pfx] = probs;
+    }
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>Generate a random suffix for a given prefix. Uses the fact that the
+probabilities are only increasing to quickly find the symbol
+corresponding to the random value.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">genSuffix</span><span class="hljs-params">(pfx)</span> {</span>
+    <span class="hljs-keyword">var</span> rand = <span class="hljs-built_in">Math</span>.random();
+    <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>;
+
+    <span class="hljs-keyword">while</span> (<span class="hljs-keyword">this</span>.probabilities[pfx][i] &amp;&amp;
+           rand &gt; <span class="hljs-keyword">this</span>.probabilities[pfx][i][<span class="hljs-number">0</span>]) {
+      i++;
+    }
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.probabilities[pfx][i][<span class="hljs-number">1</span>];
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>Some functional helpers</p>
+<hr>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>Compose functions such that</p>
+<pre><code>compose([f, g, h])(x) == h(g(f(x)))
+</code></pre>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">compose</span><span class="hljs-params">(fns)</span> {</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">composed</span><span class="hljs-params">(x)</span> {</span>
+      <span class="hljs-keyword">var</span> i = -<span class="hljs-number">1</span>;
+      <span class="hljs-keyword">var</span> l = fns.length;
+      <span class="hljs-keyword">while</span> (++i &lt; l) x = fns[i].call(<span class="hljs-keyword">this</span>, x);
+      <span class="hljs-keyword">return</span> x;
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>Curry a function <code>f</code> with an argument <code>a</code>. Only works for functions with
+at most four parameters.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">curry</span><span class="hljs-params">(f, a)</span> {</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">curried</span><span class="hljs-params">(b, c, d)</span> {</span>
+      <span class="hljs-keyword">return</span> f.call(<span class="hljs-keyword">this</span>, a, b, c, d);
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p><code>map</code> that only passes the element to <code>f</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">map</span><span class="hljs-params">(f, xs)</span> {</span>
+    <span class="hljs-keyword">var</span> rs = [];
+    <span class="hljs-keyword">var</span> i = -<span class="hljs-number">1</span>, l = xs.length;
+    <span class="hljs-keyword">while</span> (++i &lt; l) rs[i] = f.call(<span class="hljs-keyword">this</span>, xs[i]);
+    <span class="hljs-keyword">return</span> rs;
+  }
+
+  <span class="hljs-keyword">return</span> Markov;
+}));</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
