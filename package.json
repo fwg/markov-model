@@ -1,15 +1,13 @@
 {
   "name": "markov-model",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Markov chain model class",
   "main": "markov-model.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [
     "markov",
-    "markov-model"
+    "chain",
+    "model"
   ],
-  "author": "Friedemann Altrock",
+  "author": "Friedemann Altrock <friedemann@altrock.de>",
   "license": "ISC"
 }
